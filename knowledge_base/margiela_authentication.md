@@ -2,7 +2,8 @@ Margiela authentication knowledge:
 
 1) Footwear:
 
- Margiela GATs / replica are some of the pair that gets most fakes produced, due to them being more mainstream.
+ ***Margiela GATs / replica*** 
+ are some of the pair that gets most fakes produced, due to them being more mainstream.
 
  Signs to spot the difference, authentic vs fake:
  
@@ -19,7 +20,7 @@ Margiela authentication knowledge:
 
 2) Supreme x margiela collections:
 
- Supreme x MM6 Zip up Hoodie:
+ ***Supreme x MM6 Zip up Hoodie:***
  
 
   Label Attachment Method
@@ -46,19 +47,27 @@ Margiela authentication knowledge:
 
 
 
- Supreme x MM6 Maison Margiela Receipt Wallet:
-  
-  ff
+ ***Supreme x MM6 Maison Margiela Receipt Wallet:***
+
+  The authentic: The embossed numbers, circled 6, and "Supreme" box logo are pressed deep and clean into the leather with sharp, defined edges. Each number is evenly spaced and clearly legible. The leather itself has a smooth, matte finish with fine grain. The stitching along the top edge is tight and uniform. The card slot cuts are clean and precise.
+
+  The fake: The embossing is shallower and less defined — the numbers and "Supreme" box look slightly mushy, like they didn't press hard enough into the leather. The circled 6 is less crisp, with the circle appearing thicker and less proportional. The leather has a shinier, almost plastic-like sheen compared to the authentic's matte texture. The overall impression is that the stamping lacks depth and precision.
 
 
 
-4) tabi margiela are also faked quiite often
 
 
-5) sweaters and knit are faked really often, one model in particular - which i have added an image of (faked in various colours), often has DWMZ right above the size tag, which has been a consistent sign across all faked of this sweater model (the real ones do not have that).
+4) ***Margiela Tabi***:
+
+The fake: has no logos and no classic numbered engravings under the sole.
 
 
-6) Maison Margiela Calendar Graphic Logo numbers Sweatshirt Hoodie
 
 
-7) this zipped knit is very often faked, as you can see the image has also DWMZ, which is a solid indicator that the knit is not authentic, also seem to be missing the size tag.
+
+
+5) ***margiela sweaters and knit*** 
+
+The fake: often has "DWMZ" right above the size tag omn the neck, which has been a consistent sign across all faked of this sweater model + knit model. 
+
+The fake: On top of this the stitching is often not exaclty at each corner of the brand label. fakes also are missing the size tag.
