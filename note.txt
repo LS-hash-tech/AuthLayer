@@ -1,0 +1,3 @@
+this is to keep up with updates:
+
+added line of code that allows to check how many chunks are getting through when ran, and to verify that chunks are working correctly
