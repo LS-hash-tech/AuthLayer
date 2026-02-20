@@ -1,9 +1,9 @@
-#we need to compelete the following to get this working:
+# we need to compelete the following to get this working:
 
-#A function that takes an eBay URL or item ID
-#Extracts the item ID from the URL if needed
-#Calls that endpoint with your auth headers
-#Returns the relevant fields
+# A function that takes an eBay URL or item ID
+# Extracts the item ID from the URL if needed
+# Calls that endpoint with your auth headers
+# Returns the relevant fields
 
 import requests
 import os
@@ -49,17 +49,22 @@ def get_listing(item_id, token):
     }
 
     response = requests.get(url, headers=headers)
-    return response.json()
+    response.json()
+
+    data = response.json()
+
+    return {
+        "title": data["title"],
+        "description": data.get("description", ""),
+        "brand": data["brand"],
+        "condition": data["condition"],
+        "seller_username": data["seller"]["username"],
+        "feedback_score": data["seller"]["feedbackScore"],
+        "feedback_percentage": data["seller"]["feedbackPercentage"],
+    }
+
 
 token = get_ebay_token()
-print("token:", token[:20], "...")
-
 item_id = get_id_from_url("https://www.ebay.co.uk/itm/386728815164")
 listing = get_listing(item_id, token)
-
-print(listing["title"])
-print(listing["description"])
-print(listing["brand"])
-print(listing["condition"])
-print(listing["type"])
-print(listing["category"])
+print(listing)
