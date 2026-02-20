@@ -8,7 +8,6 @@ from agent import create_auth_agent
 # page config
 st.set_page_config(
     page_title="AuthLayer",
-    page_icon="🔒",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
