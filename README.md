@@ -1,6 +1,7 @@
 # AuthLayer
 
-AI fashion authentication agent — LangGraph + GPT-4o Vision + RAG. Paste an eBay link, get a confidence score.
+AI fashion authentication agent: LangGraph + GPT-4o Vision + RAG. 
+Paste an eBay link & get a confidence score.
 
 Built this because there is no free tool that actually helps you check if a secondhand designer item is real before you buy it. After 6+ years reselling designer fashion and authenticating items myself, I turned that knowledge into an agent that can do it automatically.
 
