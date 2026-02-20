@@ -1,15 +1,29 @@
-# app.py      streamlit frontend for AuthLayer
+# app.py - streamlit frontend for AuthLayer
 # dark theme & clean, inspired by graby ai but with red accent
 
 import streamlit as st
+import base64
 from agent import create_auth_agent
 
 # page config
 st.set_page_config(
     page_title="AuthLayer",
+    page_icon="🔒",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+# load logo as base64
+def get_logo_base64():
+    try:
+        with open("logo.png", "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return ""
+
+
+logo_b64 = get_logo_base64()
 
 # custom css - dark theme, red accent, plain black bg
 st.markdown(
@@ -54,6 +68,12 @@ st.markdown(
         right: 0;
         height: 2px;
         background: linear-gradient(90deg, transparent, #dc2626, transparent);
+    }
+    .hero-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 16px;
+        filter: brightness(1.1);
     }
     .hero-title {
         font-size: 2.2rem;
@@ -163,20 +183,6 @@ st.markdown(
     /* general text */
     p, span, li, h1, h2, h3, h4 { color: #e0e0e0; }
     
-    /* info cards in chat */
-    .auth-result {
-        background: #0a0a0a;
-        border: 1px solid #1f1f1f;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 8px 0;
-    }
-    
-    /* success/warning/error badges */
-    .stSuccess { background-color: rgba(34, 197, 94, 0.1) !important; }
-    .stWarning { background-color: rgba(251, 191, 36, 0.1) !important; }
-    .stError { background-color: rgba(220, 38, 38, 0.1) !important; }
-    
     /* hide streamlit branding */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
@@ -186,12 +192,28 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# hero section
+# top navbar with logo + name
+if logo_b64:
+    nav_logo = f'<img src="data:image/png;base64,{logo_b64}" style="width:36px;height:36px;filter:brightness(1.1);" alt="AuthLayer">'
+else:
+    nav_logo = '<span style="font-size:1.5rem;">🔒</span>'
+
+st.markdown(
+    f"""
+<div style="display:flex;align-items:center;gap:12px;padding:8px 0 24px;border-bottom:1px solid #1a1a1a;margin-bottom:24px;">
+    {nav_logo}
+    <span style="font-size:1.3rem;font-weight:700;color:#ffffff;letter-spacing:2px;text-transform:uppercase;">AuthLayer</span>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+# hero card
 st.markdown(
     """
 <div class="hero-card">
     <div class="hero-badge">AI Authentication</div>
-    <div class="hero-title">AUTHLAYER</div>
+    <div class="hero-title">AUTHENTICATE</div>
     <div class="hero-subtitle">Paste an eBay UK link. Get an instant authentication assessment.</div>
 </div>
 """,
@@ -223,6 +245,11 @@ st.markdown(
 
 # sidebar
 with st.sidebar:
+    if logo_b64:
+        st.markdown(
+            f'<img src="data:image/png;base64,{logo_b64}" style="width:50px;margin-bottom:8px;">',
+            unsafe_allow_html=True,
+        )
     st.markdown("### AuthLayer")
     st.markdown(
         """
