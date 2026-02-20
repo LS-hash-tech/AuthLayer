@@ -1,5 +1,5 @@
 # app.py - streamlit frontend for AuthLayer
-# dark theme & clean, inspired by graby ai but with red accent
+# dark theme & clean, red accent, dust particles
 
 import streamlit as st
 import base64
@@ -118,51 +118,48 @@ st.markdown(
         text-transform: uppercase;
     }
     
-    /* rotating text */
-    .hero-title-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-bottom: 12px;
-    }
+    /* centered title + rotating word below */
     .hero-title-static {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
         font-weight: 800;
         color: #ffffff;
         letter-spacing: 3px;
         text-transform: uppercase;
+        text-align: center;
+        margin-bottom: 4px;
     }
     .hero-title-rotating {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
         font-weight: 800;
         letter-spacing: 3px;
         text-transform: uppercase;
         color: #dc2626;
-        height: 2.8rem;
+        height: 3rem;
         overflow: hidden;
         position: relative;
-        min-width: 220px;
-        text-align: left;
+        text-align: center;
+        margin-bottom: 16px;
     }
     .hero-title-rotating .word-slider {
         display: flex;
         flex-direction: column;
+        align-items: center;
         animation: slideWords 21s ease-in-out infinite;
     }
     .hero-title-rotating .word-slider span {
-        height: 2.8rem;
+        height: 3rem;
         display: flex;
         align-items: center;
+        justify-content: center;
     }
     
     @keyframes slideWords {
         0%, 14.28%      { transform: translateY(0); }
-        16.66%, 30.95%  { transform: translateY(-2.8rem); }
-        33.33%, 47.61%  { transform: translateY(-5.6rem); }
-        50%, 64.28%     { transform: translateY(-8.4rem); }
-        66.66%, 80.95%  { transform: translateY(-11.2rem); }
-        83.33%, 97.61%  { transform: translateY(-14rem); }
+        16.66%, 30.95%  { transform: translateY(-3rem); }
+        33.33%, 47.61%  { transform: translateY(-6rem); }
+        50%, 64.28%     { transform: translateY(-9rem); }
+        66.66%, 80.95%  { transform: translateY(-12rem); }
+        83.33%, 97.61%  { transform: translateY(-15rem); }
         100%            { transform: translateY(0); }
     }
     
@@ -194,6 +191,20 @@ st.markdown(
         font-weight: 600;
     }
     
+    /* constrain chat input width to match content */
+    [data-testid="stBottom"] {
+        max-width: 900px;
+        margin: 0 auto;
+        left: 0;
+        right: 0;
+    }
+    [data-testid="stBottom"] > div {
+        max-width: 900px;
+        margin: 0 auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
     /* chat messages */
     [data-testid="stChatMessage"] {
         background-color: #0a0a0a !important;
@@ -203,7 +214,7 @@ st.markdown(
         margin-bottom: 8px !important;
     }
     
-    /* chat input */
+    /* chat input styling */
     [data-testid="stChatInput"] {
         background-color: #0a0a0a !important;
         border-color: #1f1f1f !important;
@@ -255,6 +266,93 @@ st.markdown(
     
     /* general text */
     p, span, li, h1, h2, h3, h4 { color: #e0e0e0; }
+    
+    /* confidence dashboard */
+    .confidence-dashboard {
+        background: linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+        border: 1px solid #1f1f1f;
+        border-radius: 16px;
+        padding: 32px;
+        margin: 16px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    .confidence-dashboard::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--score-color, #dc2626), transparent);
+    }
+    .confidence-score-wrap {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .confidence-label {
+        font-size: 0.85rem;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+    }
+    .confidence-number {
+        font-size: 4.5rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .confidence-level {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .score-high { color: #4ade80; }
+    .score-medium { color: #fbbf24; }
+    .score-low { color: #f87171; }
+    .score-vlow { color: #dc2626; }
+    
+    .confidence-divider {
+        border: none;
+        border-top: 1px solid #1f1f1f;
+        margin: 20px 0;
+    }
+    .confidence-section-title {
+        font-size: 0.8rem;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+    }
+    .confidence-reason {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        color: #ccc;
+    }
+    .confidence-reason .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #dc2626;
+        margin-top: 7px;
+        flex-shrink: 0;
+    }
+    .confidence-next-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        color: #999;
+    }
+    .confidence-next-step .arrow {
+        color: #dc2626;
+        flex-shrink: 0;
+        font-weight: 700;
+    }
     
     /* hide streamlit branding */
     #MainMenu { visibility: hidden; }
@@ -339,22 +437,20 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# hero card with rotating words
+# hero card with rotating words - centered
 st.markdown(
     """
 <div class="hero-card">
     <div class="hero-badge">AI Authentication</div>
-    <div class="hero-title-wrap">
-        <span class="hero-title-static">AUTHENTICATE YOUR</span>
-        <div class="hero-title-rotating">
-            <div class="word-slider">
-                <span>BAG</span>
-                <span>SHOES</span>
-                <span>JACKET</span>
-                <span>BELT</span>
-                <span>TROUSERS</span>
-                <span>SHIRT</span>
-            </div>
+    <div class="hero-title-static">AUTHENTICATE YOUR</div>
+    <div class="hero-title-rotating">
+        <div class="word-slider">
+            <span>BAG</span>
+            <span>SHOES</span>
+            <span>JACKET</span>
+            <span>BELT</span>
+            <span>TROUSERS</span>
+            <span>SHIRT</span>
         </div>
     </div>
     <div class="hero-subtitle">Paste an eBay UK link. Get an instant authentication assessment.</div>
@@ -421,6 +517,131 @@ with st.sidebar:
         st.session_state.checked_listings = []
         st.rerun()
 
+
+def render_confidence_dashboard(response_text):
+    """tries to parse confidence score from agent response and render a dashboard"""
+    import re
+
+    # look for score patterns in the response
+    score_match = re.search(
+        r'["\']?score["\']?\s*[:=]\s*(\d+)', response_text, re.IGNORECASE
+    )
+    if not score_match:
+        score_match = re.search(
+            r"confidence\s*(?:score)?\s*(?:of|:)\s*(\d+)", response_text, re.IGNORECASE
+        )
+    if not score_match:
+        score_match = re.search(r"(\d+)\s*(?:%|percent)", response_text, re.IGNORECASE)
+
+    if not score_match:
+        return False
+
+    score = int(score_match.group(1))
+    score = min(max(score, 0), 100)
+
+    # determine color class
+    if score >= 85:
+        color_class = "score-high"
+        level = "LIKELY AUTHENTIC"
+    elif score >= 60:
+        color_class = "score-medium"
+        level = "PROCEED WITH CAUTION"
+    elif score >= 30:
+        color_class = "score-low"
+        level = "SIGNIFICANT RED FLAGS"
+    else:
+        color_class = "score-vlow"
+        level = "ALMOST CERTAINLY FAKE"
+
+    # extract reasons - look for bullet points or numbered items
+    reasons = []
+    reason_patterns = [
+        re.findall(r"[-*]\s+(.+?)(?:\n|$)", response_text),
+        re.findall(r"\d+\.\s+(.+?)(?:\n|$)", response_text),
+    ]
+    for matches in reason_patterns:
+        for m in matches:
+            cleaned = m.strip()
+            if len(cleaned) > 10 and len(cleaned) < 200:
+                reasons.append(cleaned)
+
+    if not reasons:
+        # fallback: split by sentences and grab relevant ones
+        sentences = response_text.split(".")
+        for s in sentences:
+            s = s.strip()
+            if any(
+                word in s.lower()
+                for word in [
+                    "flag",
+                    "concern",
+                    "suspicious",
+                    "fake",
+                    "authentic",
+                    "score",
+                    "seller",
+                    "label",
+                    "stitch",
+                ]
+            ):
+                if len(s) > 15 and len(s) < 200:
+                    reasons.append(s)
+
+    reasons = reasons[:6]  # cap at 6
+
+    # build reasons html
+    reasons_html = ""
+    for r in reasons:
+        reasons_html += f'<div class="confidence-reason"><div class="dot"></div><span>{r}</span></div>'
+
+    if not reasons_html:
+        reasons_html = '<div class="confidence-reason"><div class="dot"></div><span>See detailed analysis above</span></div>'
+
+    # next steps based on score
+    if score >= 85:
+        steps = [
+            "Item appears legitimate based on available signals",
+            "Still recommended to inspect in person if possible",
+            "Check return policy before purchasing",
+        ]
+    elif score >= 60:
+        steps = [
+            "Request additional photos (labels, tags, hardware closeups)",
+            "Ask seller about provenance and where they got it",
+            "Consider using a professional authentication service",
+        ]
+    else:
+        steps = [
+            "DO NOT purchase without professional authentication",
+            "Multiple red flags detected - high risk of counterfeit",
+            "Report listing if you believe it violates platform rules",
+            "Look for the same item from a more reputable seller",
+        ]
+
+    steps_html = ""
+    for s in steps:
+        steps_html += f'<div class="confidence-next-step"><span class="arrow">></span><span>{s}</span></div>'
+
+    dashboard_html = f"""
+    <div class="confidence-dashboard">
+        <div class="confidence-score-wrap">
+            <div class="confidence-label">Confidence Score</div>
+            <div class="confidence-number {color_class}">{score}</div>
+            <div class="confidence-level {color_class}">{level}</div>
+        </div>
+        <hr class="confidence-divider">
+        <div class="confidence-section-title">Why this score</div>
+        {reasons_html}
+        <hr class="confidence-divider">
+        <div class="confidence-section-title">What to do next</div>
+        {steps_html}
+    </div>
+    """
+
+    st.markdown(dashboard_html, unsafe_allow_html=True)
+    return True
+
+
 # chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
@@ -458,7 +679,13 @@ if prompt := st.chat_input("paste an eBay link or ask about authentication..."):
                 )
 
                 response_text = result["messages"][-1].content
+
+                # show the text response
                 st.markdown(response_text)
+
+                # try to render confidence dashboard if score is in the response
+                render_confidence_dashboard(response_text)
+
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
 
             except Exception as e:
