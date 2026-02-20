@@ -9,14 +9,15 @@ from agent_setup import setup_knowledge_base
 from tools import fetch_ebay_listing, analyze_listing_images, calculate_confidence_score, create_auth_search_tool
 
 
-# agent state - what persists across conversation turns 
+# agent state - what persists across conversation turns
 
 class AuthAgentState(TypedDict):
-    messages: Annotated[list, add_messages]  # conversation history
-    checked_listings: list  # tracks what listings the user already checked this session
+    messages: Annotated[list, add_messages]
+    checked_listings: list
+    remaining_steps: int  # langgraph needs this internally
 
 
-#. system prompt - the agent personality
+# . system prompt - the agent personality
 
 SYSTEM_PROMPT = """You are AuthLayer, an AI-powered fashion authentication assistant specializing in 
 designer items on eBay UK. You have deep expertise in spotting counterfeit designer goods, 
