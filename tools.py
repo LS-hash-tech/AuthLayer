@@ -89,11 +89,9 @@ def fetch_ebay_listing(ebay_url: str) -> dict:
 
 # --- load reference images for comparison ---
 
-
 def load_reference_image(filename):
-    """loads a reference image as base64 for sending to vision model"""
+    """loads a single reference image as base64"""
     try:
-        # check a few possible locations
         paths = [
             filename,
             f"reference_images/{filename}",
@@ -103,7 +101,6 @@ def load_reference_image(filename):
             if os.path.exists(path):
                 with open(path, "rb") as f:
                     data = base64.b64encode(f.read()).decode()
-                # figure out media type
                 if path.endswith(".webp"):
                     media = "image/webp"
                 elif path.endswith(".png"):
@@ -114,6 +111,57 @@ def load_reference_image(filename):
         return None, None
     except:
         return None, None
+
+
+def load_reference_images_from_folder(folder_path, count=3):
+    """loads random reference images from a folder, returns list of (base64, media_type) tuples"""
+    import random
+
+    refs = []
+    try:
+        # check possible folder locations
+        possible = [folder_path, os.path.join(os.path.dirname(__file__), folder_path)]
+
+        actual_path = None
+        for p in possible:
+            if os.path.exists(p) and os.path.isdir(p):
+                actual_path = p
+                break
+
+        if not actual_path:
+            return refs
+
+        # grab all image files in the folder
+        valid_ext = [".jpg", ".jpeg", ".png", ".webp"]
+        all_images = [
+            f
+            for f in os.listdir(actual_path)
+            if any(f.lower().endswith(ext) for ext in valid_ext)
+        ]
+
+        if not all_images:
+            return refs
+
+        # pick random subset
+        selected = random.sample(all_images, min(count, len(all_images)))
+
+        for filename in selected:
+            filepath = os.path.join(actual_path, filename)
+            with open(filepath, "rb") as f:
+                data = base64.b64encode(f.read()).decode()
+
+            if filename.endswith(".webp"):
+                media = "image/webp"
+            elif filename.endswith(".png"):
+                media = "image/png"
+            else:
+                media = "image/jpeg"
+
+            refs.append((data, media, filename))
+
+        return refs
+    except:
+        return refs
 
 
 # --- image analysis with gpt-4o vision ---
@@ -130,30 +178,30 @@ def analyze_listing_images(
     try:
         llm = ChatOpenAI(model="gpt-4o", max_tokens=2000)
 
-        # check if we have a reference image for this item type
-        has_reference = False
-        ref_b64 = None
-        ref_media = None
+        # check if we have reference images for this item type
+        reference_images = []
 
         brand_lower = brand.lower() if brand else ""
         item_lower = item_type.lower() if item_type else ""
 
-        # load GAT reference if this is a margiela gat check
+        # load GAT references if this is a margiela gat check
         if "margiela" in brand_lower and any(
             word in item_lower
             for word in ["gat", "replica", "sneaker", "trainer", "shoe"]
         ):
-            ref_b64, ref_media = load_reference_image("reference_gat_authentic.webp")
-            if ref_b64:
-                has_reference = True
+            reference_images = load_reference_images_from_folder(
+                "reference_images/margiela_gats", count=3
+            )
 
         # build the prompt
-        if has_reference:
+        if reference_images:
+            ref_count = len(reference_images)
+            ref_names = [r[2] for r in reference_images]
             prompt_text = f"""You are an expert fashion authenticator. You are checking {brand} {item_type}.
 
-IMPORTANT: The FIRST image below is a KNOWN AUTHENTIC reference image. Compare ALL subsequent listing images against this reference.
+IMPORTANT: The FIRST {ref_count} images below are KNOWN AUTHENTIC reference images in various conditions ({', '.join(ref_names)}). Compare ALL subsequent listing images against these references.
 
-For Margiela GATs specifically, focus on:
+CRITICAL RULES FOR MARGIELA GATs:
 - HEEL TAB: On authentic, the heel tab is thin, flat, sits flush against the shoe. On fakes, it is puffy, overstuffed, and protrudes outward. THIS IS THE MOST IMPORTANT CHECK.
 - Ankle collar: authentic is slim and structured, fake is bloated and rounded
 - Overall back profile: authentic is sleek, fake is bulky
@@ -161,7 +209,17 @@ For Margiela GATs specifically, focus on:
 - Stitching precision
 - Label placement and quality inside the shoe
 
-Compare each listing image against the authentic reference and give a SPECIFIC verdict on whether the listed item matches the authentic or shows signs of being fake. Be direct - say "this looks authentic" or "this looks fake" with specific visual reasons."""
+IMPORTANT ABOUT CONDITION:
+- Used/worn authentic shoes WILL look different from new ones. Leather softens with wear, suede gets marks, soles show wear. This is NORMAL.
+- Do NOT flag normal wear and aging as signs of being fake.
+- Focus on STRUCTURAL indicators: proportions, shape of heel tab, construction quality. These dont change with wear.
+
+IMPORTANT ABOUT LACES:
+- Authentic Margiela GATs with light/cream laces develop natural yellowing over time. Yellowed laces on a used pair are a SIGN OF AUTHENTICITY, not a red flag.
+- There is no authentic pair with pure bright white laces - they are always cream/off-white.
+- Authentic laces are not super thick. If laces look unusually thick or chunky, that could be a red flag.
+
+Compare each listing image against the authentic references and give a SPECIFIC verdict. Be direct - say "this looks authentic" or "this looks fake" with specific visual reasons. Remember that condition/wear does NOT equal fake."""
         else:
             prompt_text = f"""You are an expert fashion authenticator specializing in designer brands.
                 
@@ -181,8 +239,8 @@ Give your specific assessment. Be direct about whether each image looks authenti
         # build message content
         content = [{"type": "text", "text": prompt_text}]
 
-        # add reference image first if we have one
-        if has_reference and ref_b64:
+        # add reference images first
+        for ref_b64, ref_media, ref_name in reference_images:
             content.append(
                 {
                     "type": "image_url",
