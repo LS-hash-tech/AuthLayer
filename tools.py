@@ -1,5 +1,5 @@
-# all the tools for the authentication agent
-# + ebay listing fetch, image analysis, knowledge base search, confidence scoring
+# tools.py - all the tools for the authentication agent
+# ebay listing fetch, image analysis with reference comparison, knowledge base search, confidence scoring
 
 import requests
 import os
@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage
 load_dotenv()
 
 
-#    ebay
+# --- ebay stuff ---
 
 def get_ebay_token():
     # posts credentials to ebay, gets back an access token
@@ -35,7 +35,7 @@ def get_ebay_token():
 
 
 def get_id_from_url(url):
-    # strip everything after ? (query params) then grab the id
+    # strip query params (everything after ?) then grab item id from end
     clean_url = url.split("?")[0]
     return clean_url.split("/")[-1]
 
@@ -87,24 +87,85 @@ def fetch_ebay_listing(ebay_url: str) -> dict:
         return {"error": f"couldnt fetch listing: {str(e)}"}
 
 
-# ...... image analysis with gpt-4o vision
+# --- load reference images for comparison ---
+
+
+def load_reference_image(filename):
+    """loads a reference image as base64 for sending to vision model"""
+    try:
+        # check a few possible locations
+        paths = [
+            filename,
+            f"reference_images/{filename}",
+            os.path.join(os.path.dirname(__file__), filename),
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    data = base64.b64encode(f.read()).decode()
+                # figure out media type
+                if path.endswith(".webp"):
+                    media = "image/webp"
+                elif path.endswith(".png"):
+                    media = "image/png"
+                else:
+                    media = "image/jpeg"
+                return data, media
+        return None, None
+    except:
+        return None, None
+
+
+# --- image analysis with gpt-4o vision ---
 
 
 @tool
-def analyze_listing_images(image_urls: list, brand: str = "unknown") -> str:
+def analyze_listing_images(
+    image_urls: list, brand: str = "unknown", item_type: str = "unknown"
+) -> str:
     """Analyzes listing images for authentication red flags using GPT-4o vision.
-    Pass a list of image URLs from the eBay listing and the brand name."""
+    Pass a list of image URLs from the eBay listing, the brand name, and item type (e.g. 'GAT sneakers', 'hoodie', 'wallet').
+    For Margiela GATs this will compare against a known authentic reference image."""
 
     try:
-        llm = ChatOpenAI(model="gpt-4o", max_tokens=1500)
+        llm = ChatOpenAI(model="gpt-4o", max_tokens=2000)
 
-        # build the message with images
-        content = [
-            {
-                "type": "text",
-                "text": f"""You are an expert fashion authenticator specializing in designer brands.
+        # check if we have a reference image for this item type
+        has_reference = False
+        ref_b64 = None
+        ref_media = None
+
+        brand_lower = brand.lower() if brand else ""
+        item_lower = item_type.lower() if item_type else ""
+
+        # load GAT reference if this is a margiela gat check
+        if "margiela" in brand_lower and any(
+            word in item_lower
+            for word in ["gat", "replica", "sneaker", "trainer", "shoe"]
+        ):
+            ref_b64, ref_media = load_reference_image("reference_gat_authentic.webp")
+            if ref_b64:
+                has_reference = True
+
+        # build the prompt
+        if has_reference:
+            prompt_text = f"""You are an expert fashion authenticator. You are checking {brand} {item_type}.
+
+IMPORTANT: The FIRST image below is a KNOWN AUTHENTIC reference image. Compare ALL subsequent listing images against this reference.
+
+For Margiela GATs specifically, focus on:
+- HEEL TAB: On authentic, the heel tab is thin, flat, sits flush against the shoe. On fakes, it is puffy, overstuffed, and protrudes outward. THIS IS THE MOST IMPORTANT CHECK.
+- Ankle collar: authentic is slim and structured, fake is bloated and rounded
+- Overall back profile: authentic is sleek, fake is bulky
+- Suede quality and texture
+- Stitching precision
+- Label placement and quality inside the shoe
+
+Compare each listing image against the authentic reference and give a SPECIFIC verdict on whether the listed item matches the authentic or shows signs of being fake. Be direct - say "this looks authentic" or "this looks fake" with specific visual reasons."""
+        else:
+            prompt_text = f"""You are an expert fashion authenticator specializing in designer brands.
                 
-Analyze these listing images for the brand: {brand}
+Analyze these listing images for the brand: {brand}, item type: {item_type}
 
 Look for:
 - Label/tag quality (stitching, font, alignment, material)
@@ -112,14 +173,24 @@ Look for:
 - Material quality and texture
 - Construction details (seams, stitching patterns)
 - Any obvious red flags (wrong fonts, poor stitching, cheap materials)
-- For Margiela specifically: check heel tab on GATs, DWMZ marking on sweaters/knits, label attachment method
+- For Margiela: check heel tab on GATs, DWMZ marking on sweaters/knits, label attachment method
+- For Supreme x Margiela: check label is sewn into seam not mounted on separate backing
 
-Give your assessment of each image and note any red flags.
-Be specific about what you see, not vague.""",
-            }
-        ]
+Give your specific assessment. Be direct about whether each image looks authentic or fake and why."""
 
-        # add each image to the message (max 4 to save tokens)
+        # build message content
+        content = [{"type": "text", "text": prompt_text}]
+
+        # add reference image first if we have one
+        if has_reference and ref_b64:
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{ref_media};base64,{ref_b64}"},
+                }
+            )
+
+        # add listing images (max 4)
         for img_url in image_urls[:4]:
             content.append({"type": "image_url", "image_url": {"url": img_url}})
 
@@ -132,8 +203,7 @@ Be specific about what you see, not vague.""",
         return f"image analysis failed: {str(e)}"
 
 
-#    knowledge base search (gets wired up in the agent)
-
+# --- knowledge base search (gets wired up in the agent) ---
 
 def create_auth_search_tool(vectorstore):
     """creates the RAG search tool using the vectorstore from agent_setup"""
@@ -160,7 +230,7 @@ def create_auth_search_tool(vectorstore):
     return search_authentication_guide
 
 
-#   confidence scoring
+# --- confidence scoring - images and knowledge base are primary, seller is secondary ---
 
 
 @tool
@@ -173,6 +243,8 @@ def calculate_confidence_score(
     knowledge_base_matches: str = "none",
 ) -> dict:
     """Calculates an authentication confidence score based on all available signals.
+    IMAGES and KNOWLEDGE BASE are the primary factors (worth most of the score).
+    Seller feedback is secondary - a new seller alone should NOT tank the score.
 
     Args:
         title_flags: any suspicious keywords found in title/description
@@ -186,7 +258,93 @@ def calculate_confidence_score(
     score = 100  # start at 100% authentic
     reasons = []
 
-    # check title/description for dodgy keywords
+    # --- PRIMARY SIGNALS (images + knowledge base) - these matter most ---
+
+    # image analysis flags (up to -60 points)
+    if image_analysis_summary and image_analysis_summary.lower() != "none":
+        img_lower = image_analysis_summary.lower()
+
+        # strong fake indicators from vision
+        strong_fake_words = [
+            "fake",
+            "counterfeit",
+            "not authentic",
+            "replica fake",
+            "definitely fake",
+        ]
+        for word in strong_fake_words:
+            if word in img_lower:
+                score -= 50
+                reasons.append(
+                    f"Image analysis indicates item is likely fake: '{word}' detected"
+                )
+                break
+
+        # moderate concerns from vision
+        moderate_words = [
+            "suspicious",
+            "concerning",
+            "inconsistent",
+            "poor quality",
+            "red flag",
+            "puffy",
+            "overstuffed",
+            "bloated",
+        ]
+        concern_count = 0
+        for word in moderate_words:
+            if word in img_lower:
+                concern_count += 1
+        if concern_count > 0:
+            penalty = min(concern_count * 10, 40)
+            score -= penalty
+            reasons.append(f"Image analysis found {concern_count} visual concern(s)")
+
+        # positive signals from vision (can recover some points)
+        positive_words = [
+            "authentic",
+            "genuine",
+            "looks real",
+            "matches authentic",
+            "correct",
+            "proper",
+        ]
+        positive_count = 0
+        for word in positive_words:
+            if word in img_lower:
+                positive_count += 1
+        if positive_count >= 2 and concern_count == 0:
+            score = min(score + 10, 100)
+            reasons.append("Image analysis found multiple indicators of authenticity")
+
+        # specific margiela checks
+        if "dwmz" in img_lower:
+            score -= 40
+            reasons.append(
+                "DWMZ marking detected - known fake indicator for Margiela knitwear"
+            )
+        if "heel tab" in img_lower and any(
+            w in img_lower
+            for w in ["puffy", "thick", "overstuffed", "bloated", "bulky"]
+        ):
+            score -= 40
+            reasons.append(
+                "Heel tab appears puffy/overstuffed - primary fake indicator for Margiela GATs"
+            )
+
+    # knowledge base match concerns (up to -30 points)
+    if knowledge_base_matches and knowledge_base_matches.lower() != "none":
+        kb_lower = knowledge_base_matches.lower()
+        if any(
+            w in kb_lower
+            for w in ["dwmz", "puffy heel", "overstuffed", "patch on patch"]
+        ):
+            score -= 15
+            reasons.append("Knowledge base flags match known counterfeit patterns")
+
+    # --- SECONDARY SIGNALS (title, seller, reviews) ---
+
+    # title/description keywords (up to -95 points - this is definitive)
     sus_keywords = [
         "fake",
         "not real",
@@ -202,76 +360,57 @@ def calculate_confidence_score(
         "not auth",
     ]
 
-    title_lower = title_flags.lower()
+    title_lower = title_flags.lower() if title_flags else ""
     for keyword in sus_keywords:
         if keyword in title_lower:
-            # replica is an exception for margiela
+            # replica exception for margiela
             if (
                 keyword == "rep"
                 and "replica" in title_lower
-                and "margiela" in title_lower.lower()
+                and "margiela" in title_lower
             ):
                 reasons.append(
-                    "'replica' found but this is normal for Margiela Replica line - no penalty"
+                    "'Replica' found but this is normal for Margiela Replica line - no penalty"
                 )
                 continue
-            score = max(score - 95, 0)  # basically kills it
-            reasons.append(f"suspicious keyword '{keyword}' found in title/description")
+            score = max(score - 95, 0)
+            reasons.append(
+                f"Suspicious keyword '{keyword}' found in title/description - almost certainly not authentic"
+            )
             break
 
-    # seller feedback check
+    # seller feedback (up to -20 points max - NOT the main factor)
     if seller_feedback_score == 0:
-        score -= 40
-        reasons.append("seller has 0 feedback - major red flag")
-    elif seller_feedback_score < 10:
-        score -= 25
+        score -= 15
         reasons.append(
-            f"seller only has {seller_feedback_score} feedbacks - new account"
+            "Seller has 0 feedback - new account, exercise caution (but this alone doesnt mean fake)"
         )
-    elif seller_feedback_score < 50:
+    elif seller_feedback_score < 10:
         score -= 10
-        reasons.append(f"seller has low feedback count ({seller_feedback_score})")
+        reasons.append(
+            f"Seller has low feedback count ({seller_feedback_score}) - relatively new account"
+        )
 
-    # feedback percentage
+    # feedback percentage (only penalize if really bad)
     try:
         fb_pct = float(seller_feedback_percentage)
-        if fb_pct < 95:
-            score -= 20
-            reasons.append(f"seller feedback percentage is low ({fb_pct}%)")
-        elif fb_pct < 98:
+        if fb_pct < 90:
+            score -= 15
+            reasons.append(f"Seller feedback percentage is concerning ({fb_pct}%)")
+        elif fb_pct < 95:
             score -= 5
-            reasons.append(
-                f"seller feedback percentage is decent but not great ({fb_pct}%)"
-            )
+            reasons.append(f"Seller feedback percentage is below average ({fb_pct}%)")
     except:
         pass
 
-    # review flags
+    # review flags (up to -25 points)
     if review_flags and review_flags.lower() != "none":
         review_lower = review_flags.lower()
         for keyword in sus_keywords:
             if keyword in review_lower:
-                score -= 30
-                reasons.append(f"buyer reviews mention '{keyword}' - concerning")
+                score -= 25
+                reasons.append(f"Buyer reviews mention '{keyword}' - concerning")
                 break
-
-    # image analysis flags
-    if image_analysis_summary and image_analysis_summary.lower() != "none":
-        img_lower = image_analysis_summary.lower()
-        red_flag_words = [
-            "fake",
-            "counterfeit",
-            "suspicious",
-            "poor quality",
-            "inconsistent",
-            "red flag",
-            "concerning",
-            "dwmz",
-        ]
-        for word in red_flag_words:
-            if word in img_lower:
-                score -= 15
-                reasons.append(f"image analysis flagged: {word}")
 
     score = max(score, 0)  # dont go below 0
 
@@ -288,23 +427,23 @@ def calculate_confidence_score(
     # next steps based on score
     if score >= 85:
         next_steps = [
-            "item appears legitimate based on available signals",
-            "still recommended to inspect in person if possible",
-            "check return policy before purchasing",
+            "Item appears legitimate based on available signals",
+            "Still recommended to inspect in person if possible",
+            "Check return policy before purchasing",
         ]
     elif score >= 60:
         next_steps = [
-            "request additional photos (labels, tags, hardware closeups)",
-            "ask seller about provenance/where they got it",
-            "consider using a professional authentication service",
-            "check sellers other listings for patterns",
+            "Request additional photos (labels, tags, hardware closeups)",
+            "Ask seller about provenance and where they got it",
+            "Consider using a professional authentication service",
+            "Check sellers other listings for patterns",
         ]
     else:
         next_steps = [
             "DO NOT purchase without professional authentication",
-            "multiple red flags detected - high risk of counterfeit",
-            "report listing if you believe it violates platform rules",
-            "look for the same item from a more reputable seller",
+            "Multiple red flags detected - high risk of counterfeit",
+            "Report listing if you believe it violates platform rules",
+            "Look for the same item from a more reputable seller",
         ]
 
     return {
@@ -317,9 +456,11 @@ def calculate_confidence_score(
 
 # quick test
 if __name__ == "__main__":
-    # test ebay fetch
+    # test ebay fetch with long url
     result = fetch_ebay_listing.invoke(
-        {"ebay_url": "https://www.ebay.co.uk/itm/386728815164"}
+        {
+            "ebay_url": "https://www.ebay.co.uk/itm/389562275934?_skw=margiela&itmmeta=blah"
+        }
     )
     print("listing title:", result.get("title", "error"))
     print("seller:", result.get("seller_username", "error"))
