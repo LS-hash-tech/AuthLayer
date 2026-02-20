@@ -35,8 +35,9 @@ def get_ebay_token():
 
 
 def get_id_from_url(url):
-    # grabs the item id from the end of an ebay link
-    return url.split("/")[-1]
+    # strip everything after ? (query params) then grab the id
+    clean_url = url.split("?")[0]
+    return clean_url.split("/")[-1]
 
 
 @tool
