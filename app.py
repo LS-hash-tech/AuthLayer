@@ -5,11 +5,7 @@ import streamlit as st
 from agent import create_auth_agent
 
 # page config
-st.set_page_config(
-    page_title="AuthLayer",
-    page_icon="🔍",
-    layout="wide"
-)
+st.set_page_config(page_title="AuthLayer", layout="wide")
 
 # dark styling
 st.markdown("""
