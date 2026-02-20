@@ -9,7 +9,7 @@ from agent_setup import setup_knowledge_base
 from tools import fetch_ebay_listing, analyze_listing_images, calculate_confidence_score, create_auth_search_tool
 
 
-# --- agent state - what persists across conversation turns ---
+# agent state - what persists across conversation turns
 
 class AuthAgentState(TypedDict):
     messages: Annotated[list, add_messages]  # conversation history
