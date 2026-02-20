@@ -1,0 +1,129 @@
+# AuthLayer - AI Fashion Authentication Agent
+
+An AI-powered authentication assistant for designer fashion items on eBay UK. Built with LangGraph, LangChain, and GPT-4o vision to help resellers and buyers spot counterfeit designer goods before purchasing.
+
+## The Problem
+
+The secondhand designer fashion market is flooded with counterfeits. Buyers lose money on fakes, and even experienced resellers can get caught out. There's no single free tool that combines listing analysis, image authentication, and seller reputation checking into one assessment.
+
+AuthLayer solves this by combining:
+- **RAG-powered authentication knowledge** from 6+ years of designer fashion expertise
+- **eBay API integration** for pulling real listing data
+- **GPT-4o vision** for analyzing product images
+- **Confidence scoring** that weighs all signals together
+
+## Target Users
+
+- Fashion resellers checking inventory before buying
+- Buyers wanting a second opinion before purchasing
+- Anyone who wants to learn about authentication
+
+## How It Works
+
+1. User pastes an eBay UK listing URL
+2. Agent fetches listing details (title, description, images, seller info)
+3. Agent searches authentication knowledge base for brand-specific rules
+4. Agent analyzes listing images using GPT-4o vision
+5. Agent calculates a confidence score based on all signals
+6. User gets a clear verdict with specific reasons and next steps
+
+## Tech Stack
+
+- **Frontend**: Streamlit
+- **Agent Framework**: LangGraph (ReAct agent pattern)
+- **LLM**: GPT-4o (reasoning + vision)
+- **RAG**: LangChain + InMemoryVectorStore + OpenAI embeddings
+- **External API**: eBay Browse API
+- **Language**: Python
+
+## Project Structure
+
+```
+AuthLayer/
+  knowledge_base/          # authentication guides (RAG source docs)
+    general_authentication.md
+    margiela_authentication.md
+  agent_setup.py           # RAG pipeline (load, chunk, embed, store)
+  tools.py                 # agent tools (ebay fetch, image analysis, scoring)
+  agent.py                 # main agent graph with LangGraph
+  app.py                   # streamlit frontend
+  requirements.txt
+  .env.example
+```
+
+## Setup
+
+1. Clone the repo
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Create a `.env` file with your keys:
+```
+OPENAI_API_KEY=sk-your-key
+EBAY_APP_ID=your-ebay-app-id
+EBAY_CERT_ID=your-ebay-cert-id
+```
+
+4. Run:
+```bash
+streamlit run app.py
+```
+
+## Tools (5 total)
+
+1. **fetch_ebay_listing** - Fetches listing details from eBay Browse API (title, description, images, seller info, condition)
+2. **analyze_listing_images** - Sends listing images to GPT-4o vision for authentication analysis
+3. **search_authentication_guide** - RAG search over authentication knowledge base
+4. **calculate_confidence_score** - Calculates authentication confidence based on all signals
+
+## Agent Architecture
+
+Uses LangGraph's ReAct pattern:
+- **Reason**: LLM analyzes the user's request and decides which tools to call
+- **Act**: Calls the appropriate tool (fetch listing, search knowledge, analyze images)
+- **Observe**: Reviews tool results
+- **Repeat**: Continues until it has enough info to give a verdict
+
+Custom `AuthAgentState` tracks:
+- `messages`: conversation history (short-term memory)
+- `checked_listings`: URLs checked this session
+
+## Authentication Knowledge Base
+
+Built from real-world expertise authenticating designer items. Currently covers:
+- **General rules**: title/description keyword analysis, seller feedback scoring, review analysis
+- **Margiela GATs**: heel tab shape (most reliable indicator)
+- **Supreme x Margiela**: label attachment, stitching quality, print quality (hoodie + wallet)
+- **Margiela Tabi**: sole engravings
+- **Margiela Knitwear**: DWMZ marking, size tag presence
+- **Replica line exception**: Margiela's own "Replica" product line handling
+
+## Known Limitations
+
+- Currently only supports eBay UK listings
+- Seller review text analysis requires separate API calls (not yet implemented)
+- Image analysis depends on listing photo quality
+- Knowledge base currently focused on Margiela - more brands planned
+- InMemoryVectorStore reloads on each app start (fine for current kb size)
+
+## Future Improvements
+
+- Add more brands (Rick Owens, Acne Studios, etc)
+- Seller review text scraping for deeper analysis
+- Persistent vector store (Pinecone) for larger knowledge base
+- Multi-platform support (Vinted, Depop)
+- User feedback loop to improve authentication rules
+- LangSmith observability for monitoring agent performance
+
+## Example Use Cases
+
+**Check a specific listing:**
+> "Can you authenticate this? https://www.ebay.co.uk/itm/123456789"
+
+**Ask about authentication:**
+> "How do I spot fake Margiela GATs?"
+
+**General questions:**
+> "What are the most commonly faked Margiela items?"

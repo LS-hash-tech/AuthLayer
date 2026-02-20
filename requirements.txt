@@ -1,0 +1,11 @@
+# requirements to launch this project locally
+streamlit
+langchain
+langchain-openai
+langchain-core
+langchain-community
+langchain-text-splitters
+langgraph
+python-dotenv
+requests
+openai
