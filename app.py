@@ -8,10 +8,10 @@ from agent import create_auth_agent
 # page config
 st.set_page_config(
     page_title="AuthLayer",
+    page_icon="A",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-
 
 # load logo as base64
 def get_logo_base64():
@@ -21,10 +21,9 @@ def get_logo_base64():
     except:
         return ""
 
-
 logo_b64 = get_logo_base64()
 
-# custom css - dark theme, red accent, plain black bg
+# custom css + dust particles + rotating text animation
 st.markdown(
     """
 <style>
@@ -36,16 +35,53 @@ st.markdown(
         background-color: #000000 !important;
     }
     
+    /* dust particles canvas */
+    #dust-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    /* make sure content sits above particles */
+    .block-container {
+        position: relative;
+        z-index: 1;
+        padding-top: 2rem;
+        max-width: 900px;
+    }
+    
     /* header area */
     [data-testid="stHeader"] {
         background-color: #000000 !important;
         border-bottom: 1px solid #1a1a1a;
     }
     
-    /* main content area */
-    .block-container {
-        padding-top: 2rem;
-        max-width: 900px;
+    /* navbar */
+    .navbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0 24px;
+        border-bottom: 1px solid #1a1a1a;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 2;
+    }
+    .navbar img {
+        width: 36px;
+        height: 36px;
+        filter: brightness(1.1);
+    }
+    .navbar-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 2px;
+        text-transform: uppercase;
     }
     
     /* hero card */
@@ -53,11 +89,12 @@ st.markdown(
         background: linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a0a 100%);
         border: 1px solid #1f1f1f;
         border-radius: 16px;
-        padding: 40px 32px;
+        padding: 48px 32px;
         text-align: center;
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
+        z-index: 2;
     }
     .hero-card::before {
         content: '';
@@ -68,25 +105,6 @@ st.markdown(
         height: 2px;
         background: linear-gradient(90deg, transparent, #dc2626, transparent);
     }
-    .hero-logo {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 16px;
-        filter: brightness(1.1);
-    }
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #ffffff;
-        letter-spacing: 3px;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-    }
-    .hero-subtitle {
-        font-size: 0.95rem;
-        color: #555;
-        margin-bottom: 0;
-    }
     .hero-badge {
         display: inline-block;
         background: rgba(220, 38, 38, 0.15);
@@ -96,8 +114,62 @@ st.markdown(
         font-size: 0.75rem;
         font-weight: 600;
         letter-spacing: 1px;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
         text-transform: uppercase;
+    }
+    
+    /* rotating text */
+    .hero-title-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+    .hero-title-static {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+    .hero-title-rotating {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #dc2626;
+        height: 2.8rem;
+        overflow: hidden;
+        position: relative;
+        min-width: 220px;
+        text-align: left;
+    }
+    .hero-title-rotating .word-slider {
+        display: flex;
+        flex-direction: column;
+        animation: slideWords 21s ease-in-out infinite;
+    }
+    .hero-title-rotating .word-slider span {
+        height: 2.8rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    @keyframes slideWords {
+        0%, 14.28%      { transform: translateY(0); }
+        16.66%, 30.95%  { transform: translateY(-2.8rem); }
+        33.33%, 47.61%  { transform: translateY(-5.6rem); }
+        50%, 64.28%     { transform: translateY(-8.4rem); }
+        66.66%, 80.95%  { transform: translateY(-11.2rem); }
+        83.33%, 97.61%  { transform: translateY(-14rem); }
+        100%            { transform: translateY(0); }
+    }
+    
+    .hero-subtitle {
+        font-size: 0.95rem;
+        color: #555;
+        margin-bottom: 0;
     }
     
     /* status bar */
@@ -110,6 +182,8 @@ st.markdown(
         justify-content: center;
         gap: 32px;
         margin-bottom: 20px;
+        position: relative;
+        z-index: 2;
     }
     .status-item {
         color: #555;
@@ -187,32 +261,102 @@ st.markdown(
     footer { visibility: hidden; }
     [data-testid="stToolbar"] { display: none; }
 </style>
+
+<!-- dust particles -->
+<canvas id="dust-canvas"></canvas>
+<script>
+(function() {
+    const canvas = document.getElementById('dust-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const particles = [];
+    const count = 60;
+    
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 1.5 + 0.5,
+            speedX: (Math.random() - 0.5) * 0.3,
+            speedY: (Math.random() - 0.5) * 0.2 - 0.1,
+            opacity: Math.random() * 0.4 + 0.1,
+            pulse: Math.random() * Math.PI * 2
+        });
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(p => {
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.pulse += 0.01;
+            
+            let currentOpacity = p.opacity + Math.sin(p.pulse) * 0.1;
+            
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(220, 38, 38, ${currentOpacity})`;
+            ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
+})();
+</script>
 """,
     unsafe_allow_html=True,
 )
 
 # top navbar with logo + name
 if logo_b64:
-    nav_logo = f'<img src="data:image/png;base64,{logo_b64}" style="width:36px;height:36px;filter:brightness(1.1);" alt="AuthLayer">'
+    nav_logo = f'<img src="data:image/png;base64,{logo_b64}" alt="AuthLayer">'
 else:
-    nav_logo = '<span style="font-size:1.5rem;">🔒</span>'
+    nav_logo = '<span style="font-size:1.5rem;color:#dc2626;">A</span>'
 
 st.markdown(
     f"""
-<div style="display:flex;align-items:center;gap:12px;padding:8px 0 24px;border-bottom:1px solid #1a1a1a;margin-bottom:24px;">
+<div class="navbar">
     {nav_logo}
-    <span style="font-size:1.3rem;font-weight:700;color:#ffffff;letter-spacing:2px;text-transform:uppercase;">AuthLayer</span>
+    <span class="navbar-name">AuthLayer</span>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-# hero card
+# hero card with rotating words
 st.markdown(
     """
 <div class="hero-card">
     <div class="hero-badge">AI Authentication</div>
-    <div class="hero-title">AUTHENTICATE</div>
+    <div class="hero-title-wrap">
+        <span class="hero-title-static">AUTHENTICATE YOUR</span>
+        <div class="hero-title-rotating">
+            <div class="word-slider">
+                <span>BAG</span>
+                <span>SHOES</span>
+                <span>JACKET</span>
+                <span>BELT</span>
+                <span>TROUSERS</span>
+                <span>SHIRT</span>
+            </div>
+        </div>
+    </div>
     <div class="hero-subtitle">Paste an eBay UK link. Get an instant authentication assessment.</div>
 </div>
 """,
