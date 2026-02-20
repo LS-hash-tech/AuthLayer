@@ -4,9 +4,9 @@ AI fashion authentication agent — LangGraph + GPT-4o Vision + RAG. Paste an eB
 
 Built this because there is no free tool that actually helps you check if a secondhand designer item is real before you buy it. After 6+ years reselling designer fashion and authenticating items myself, I turned that knowledge into an agent that can do it automatically.
 
-![AuthLayer UI](screenshots/ui_hero.png)
+![AuthLayer UI](screenshot/ui_hero.png)
 
-![Confidence Score Dashboard](screenshots/confidence_score.png)
+![Confidence Score Dashboard](screenshot/confidence_score.png)
 
 
 ## What it does
