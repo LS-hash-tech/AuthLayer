@@ -176,7 +176,7 @@ def analyze_listing_images(
     For Margiela GATs this will compare against a known authentic reference image."""
 
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", max_tokens=1500)
+        llm = ChatOpenAI(model="gpt-4o", max_tokens=2000)
 
         # check if we have reference images for this item type
         reference_images = []
