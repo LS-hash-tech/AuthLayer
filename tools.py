@@ -190,7 +190,7 @@ def analyze_listing_images(
             for word in ["gat", "replica", "sneaker", "trainer", "shoe"]
         ):
             reference_images = load_reference_images_from_folder(
-                "reference_images/margiela_gats", count=3
+                "reference_images/margiela_gats", count=2
             )
 
         # build the prompt
