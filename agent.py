@@ -84,7 +84,7 @@ def create_auth_agent():
     ]
 
     # the brain
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
     # wire it all together
     agent = create_react_agent(
